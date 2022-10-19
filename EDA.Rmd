@@ -1,0 +1,42 @@
+---
+title: "EDA"
+author: "Beibei Du, Wafiakmal Miftah, Suzanna Thompson, Alisa Tian"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+```
+# IDS702 Final Project EDA
+### Team member: Beibei(Bella) Du, Wafiakmal Miftah, Suzanna Thompson, Wenjing Tian
+
+For part 1, we will conduct exploratory data analysis on our selected dataset.
+
+## 1. Data Overview
+Provide the chief characteristics of your data, including sample size, number of variables, and source. Include your research questions here.
+
+```{r echo = FALSE, results='asis'}
+df <- read.csv('ds_salaries.csv')
+kable(head(df)) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
+```
+
+
+
+### 1.2 Two proposed research questions
+1. Which factors are associated with an increase in salary for data science jobs? (Continuous outcome)
+2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome)
+
+## 2. Primary relationship of interest
+Present descriptive statistics and exploratory plots in whichever format you think is best (tables, figures) for your primary relationship of interest (dependent variable and primary independent variable, if applicable). Describe your findings.
+
+## 3. Other characteristics
+Briefly describe other variables in the data. If there are many, do not list them all. Rather, describe the types of variables that are present (e.g., “demographic information”).
+
+## 4. Potential challenges
+Describe aspects of the data that may present challenges in the modeling stage. For example, might certain categorical variables need to be collapsed? Is there a lot of missingness? Could the size of the dataset present model selection challenges?
