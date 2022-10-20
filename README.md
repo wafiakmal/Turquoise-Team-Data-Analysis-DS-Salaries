@@ -1,5 +1,4 @@
 # Turquoise-Team-Data-Analysis-DS-Salaries
-
 10/19/2022 Minutes of Meeting
 
 1. Chief characters: highlight sample size of data, mention its from kaggle, mark distinction between the three salary columns, propose that we're only using salary-in-usd column, define what each column is. Go into detail about what remote ratio means.
