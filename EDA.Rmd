@@ -16,7 +16,6 @@ library(ggplot2)
 options(scipen=999)
 ```
 # IDS702 Final Project EDA
-### Team member: Beibei(Bella) Du, Wafiakmal Miftah, Suzanna Thompson, Wenjing Tian
 
 ## 1. Data Overview
 The data used in this project comes from Kaggle with 969 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
@@ -49,28 +48,38 @@ kable(head(df1), caption="Salary Variable vs Salary in USD Variable") %>%
 Table 3 below is showing the descriptive statistic for each variable. Variable with asterisks are categorical variable that needs to be look into further in model building.
 
 ```{r echo = FALSE, results='asis'}
-kable(describe(df), caption="Summary of the DS Salary Dataset", digits=2) %>%
-  kable_styling(latex_options = c(font_size=11,"striped", "hold_position", "scale_down"))
+#kable(describe(df), caption="Summary of the DS Salary Dataset", digits=2) %>%
+#  kable_styling(latex_options = c(font_size=11,"striped", "hold_position", "scale_down"))
 ```
 
 ### 2.1. Descriptive stats and plots Answering question 1
 
 In trying find the variable that potentially has statistical relationship with the outcome variable, we can plot each variable with salary_in_usd:
 
-```{r echo=FALSE, message=FALSE, fig.width=10, fig.height=8, fig.align='center'}
-par(mfrow=c(2,2))
-boxplot(salary_in_usd~experience_level, data=df)
-boxplot(salary_in_usd~employment_type, data=df)
-boxplot(salary_in_usd~job_title, data=df)
-boxplot(salary_in_usd~employee_residence, data=df)
+```{r echo=FALSE, message=FALSE, fig.width=4, fig.height=4, fig.align='center'}
+ggplot(df, aes(x="", y=experience_level, fill=experience_level)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void()
+```
+```{r echo=FALSE, message=FALSE, fig.width=4, fig.height=4, fig.align='center'}
+par(mfrow=c(1,3))
+ggplot(df, aes(experience_level, ..count..)) +
+  geom_bar(aes(fill=remote_ratio), position="dodge")
 ```
 
-
 ```{r echo=FALSE, message=FALSE, fig.width=10, fig.height=8, fig.align='center'}
 par(mfrow=c(2,2))
-boxplot(salary_in_usd~remote_ratio, data=df)
-boxplot(salary_in_usd~company_location, data=df)
-boxplot(salary_in_usd~company_size, data=df)
+boxplot(salary_in_usd~remote_ratio, data=df, horizontal = TRUE)
+boxplot(salary_in_usd~company_location, data=df, horizontal = TRUE)
+#hist(df$company_size)#, data=df)#, horizontal = TRUE)
+```
+```{r echo=FALSE, message=FALSE, fig.width=10, fig.height=8, fig.align='center'}
+par(mfrow=c(2,2))
+boxplot(salary_in_usd~experience_level, data=df, horizontal = TRUE)
+boxplot(salary_in_usd~employment_type, data=df, horizontal = TRUE)
+boxplot(salary_in_usd~job_title, data=df, horizontal = TRUE)
+boxplot(salary_in_usd~employee_residence, data=df, horizontal = TRUE)
 ```
 
 
