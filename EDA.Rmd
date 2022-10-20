@@ -11,39 +11,68 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(kableExtra)
+library(psych)
+library(ggplot2)
 options(scipen=999)
 ```
 # IDS702 Final Project EDA
 ### Team member: Beibei(Bella) Du, Wafiakmal Miftah, Suzanna Thompson, Wenjing Tian
 
-For part 1, we will conduct exploratory data analysis on our selected dataset.
-
 ## 1. Data Overview
-The data used in this project comes from Kaggle.
+The data used in this project comes from Kaggle with 969 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
 
-The link to the original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
-
-
+The variables in this dataset are:
+\renewcommand{\arraystretch}{1.5}
 ```{r echo = FALSE, results='asis'}
-df <- read.csv('ds_salaries.csv')
-kable(head(df)) %>%
+desc <- read.csv('description.csv')
+kable(desc, caption="Variable Names and Description", format='latex') %>%
   kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
 ```
 
-```{r echo = FALSE}
-plot(df$salary_in_usd)
-hist(df$salary_in_usd)
+Our outcome variable is salary_in_usd to ensure all the data is converted to the same unit (usd). As shown by the table below, that there are other currency in this dataset.
+\renewcommand{\arraystretch}{1.25}
+```{r echo = FALSE, results='asis'}
+df <- read.csv('ds_salaries.csv')
+temp <- c('salary_currency','salary','salary_in_usd')
+df1 <- df[temp]
+kable(head(df1), caption="Salary Variable vs Salary in USD Variable") %>%
+  kable_styling(latex_options = c(font_size=11,"striped", "hold_position"))
 ```
 
+\newpage
 
 ### 1.2 Two proposed research questions
 1. Which factors are associated with an increase in salary for data science jobs? (Continuous outcome)
 2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome)
 
 ## 2. Primary relationship of interest
-Present descriptive statistics and exploratory plots in whichever format you think is best (tables, figures) for your primary relationship of interest (dependent variable and primary independent variable, if applicable). Describe your findings.
+Table 3 below is showing the descriptive statistic for each variable. Variable with asterisks are categorical variable that needs to be look into further in model building.
+
+```{r echo = FALSE, results='asis'}
+kable(describe(df), caption="Summary of the DS Salary Dataset", digits=2) %>%
+  kable_styling(latex_options = c(font_size=11,"striped", "hold_position", "scale_down"))
+```
 
 ### 2.1. Descriptive stats and plots Answering question 1
+
+In trying find the variable that potentially has statistical relationship with the outcome variable, we can plot each variable with salary_in_usd:
+
+```{r echo=FALSE, message=FALSE, fig.width=10, fig.height=8, fig.align='center'}
+par(mfrow=c(2,2))
+boxplot(salary_in_usd~experience_level, data=df)
+boxplot(salary_in_usd~employment_type, data=df)
+boxplot(salary_in_usd~job_title, data=df)
+boxplot(salary_in_usd~employee_residence, data=df)
+```
+
+
+```{r echo=FALSE, message=FALSE, fig.width=10, fig.height=8, fig.align='center'}
+par(mfrow=c(2,2))
+boxplot(salary_in_usd~remote_ratio, data=df)
+boxplot(salary_in_usd~company_location, data=df)
+boxplot(salary_in_usd~company_size, data=df)
+```
+
 
 ### 2.2. Descriptive stats and plots Answering question 2
 
