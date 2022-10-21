@@ -19,7 +19,7 @@ options(scipen=999)
 # IDS702 Final Project EDA
 
 ## 1. Data Overview
-The data used in this project comes from Kaggle with 969 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
+The data used in this project comes from Kaggle with 607 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
 
 The variables in this dataset are:
 \renewcommand{\arraystretch}{1.5}
@@ -28,8 +28,7 @@ desc <- read.csv('description.csv')
 kable(desc, caption="Variable Names and Description", format='latex') %>%
   kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
 ```
-
-Our outcome variable is salary_in_usd to ensure all the data is converted to the same unit (usd). As shown by the table below, that there are other currency in this dataset.
+For one of our research questions we choose the outcome variable to be salary_in_usd to ensure all the data is converted to the same unit (usd). As shown by the table below, that there are other currency in this dataset.
 \renewcommand{\arraystretch}{1.25}
 ```{r echo = FALSE, results='asis'}
 df <- read.csv('ds_salaries.csv')
@@ -38,12 +37,13 @@ df1 <- df[temp]
 kable(head(df1), caption="Salary Variable vs Salary in USD Variable") %>%
   kable_styling(latex_options = c(font_size=11,"striped", "hold_position"))
 ```
+We choose salary_in_usd over similar columns, salary and salary_currency, in order to standardize our outcome variable and reduce noise and colinearity.
 
 \newpage
 
 ### 1.2 Two proposed research questions
 1. Which factors are associated with an increase in salary for data science jobs? (Continuous outcome)
-2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome)
+2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome) For this question, there are three possible values for the remote work ratio, 0, 50, and 100; these signify an in-person job, a hybrid job, and a fully remote job, respectively. 
 
 ## 2. Primary relationship of interest
 Table 3 below is showing the descriptive statistic for each variable. Variable with asterisks are categorical variable that needs to be look into further in model building.
@@ -59,7 +59,7 @@ Our first outcome variable, salary in USD, ranged from USD2,859 to USD600,000. D
 The second biggest respondents are Mid/Intermediate Level employee (35%), which majority working fully remote (54%), full in office (26%), or hybrid (20%). Most of the Mid/Intermediate Level employee works in medium size companies (46%), while the rest are working in large companies (40%) or small companies (14%). Most of their employment status are Full-Time (97%), while the rest are Contracts, Freelance, or Part-Time employee.
 The remaining respondents are Entry/Junior Level employee (15%) and Executive/Director level (4%).
 
-There are 50 different company location, which mostly in the US (58%), followed by Great Britain (8%), Canada (5%), and the rest of the world. While the employee residence data shows that respondents live in 57 different country, probably made possible by the ability to work remotely. Most of the respondents lived in the US (55%), followed by Great Britain (7%), India (5%), and the rest of the world. There are 50 different job titles in this dataset, but all of them are in the field of data science. The job title variable is dominated by data scientist (24%), data engineer (22%), data analyst (16%), while the rest are varied but mostly have "engineer" or "data" in the title. Based on the barplot shown below, there are certain pattern from Remote Ratio, Company Size and Experience level when plotted against salary (in USD)
+There are 50 different company location, which mostly in the US (58%), followed by Great Britain (8%), Canada (5%), and the rest of the world. While the employee residence data shows that respondents live in 57 different country, probably made possible by the ability to work remotely. Most of the respondents lived in the US (55%), followed by Great Britain (7%), India (5%), and the rest of the world. There are 50 different job titles in this dataset, but all of them are in the field of data science. The job title variable is dominated by data scientist (24%), data engineer (22%), data analyst (16%), while the rest are varied but mostly have "engineer" or "data" in the title. Based on the barplot shown below, there are certain pattern from Remote Ratio, Company Size and Experience level when plotted against salary (in USD).
 
 ```{r include = TRUE, echo=FALSE ,message=FALSE, fig.width=6, fig.height=5, fig.align='center'}
 par(mfrow=c(2,2))
@@ -127,9 +127,44 @@ figure
 ### 2.2. Descriptive stats and plots Answering question 2
 
 ## 3. Other characteristics
-Briefly describe other variables in the data. If there are many, do not list them all. Rather, describe the types of variables that are present (e.g., “demographic information”).
+Our dataset includes work_year, which is the year that the data was collected. This variables contains three unique values, 2020, 2021, and 2022, which contain 11.86%, 35.75%, and 52.39% respectively. Similarly, job_title has 50 unique values. Below is a table showing the unique values in the variable and their respective counts.
+\renewcommand{\arraystretch}{1}
+```{r echo = FALSE, results='asis'}
+dd <- table(df$job_title)
 
-### 
+kable(list(dd[0:10],dd[11:20],dd[21:30],dd[31:40],dd[41:50]), caption="Summary of Job Titles", booktabs=T, linesep="") %>%
+  kable_styling(font_size = 6, latex_options = c("striped", "hold_position"))
+```
+From table 4, we can see that the job titles related to data science are not in short supply. 
+Furthermore, company_location has 50 unique values and employee_residence has 57 unique values. They are each listed from table 5 to table 8. 
 
+```{r echo = FALSE, results='asis'}
+de <- table(df$employee_residence)
+
+kable(t(de[0:25]), caption="Summary of Employee Residence(1)", booktabs=T, linesep="") %>%
+  kable_styling(font_size = 6,latex_options = c("striped", "hold_position", "scale_down"))
+kable(t(de[26:57]), caption="Summary of Employee Residence(2)", booktabs=T, linesep="") %>%
+  kable_styling(font_size = 6,latex_options = c("striped", "hold_position", "scale_down"))
+```
+```{r echo = FALSE, results='asis'}
+dh <- table(df$company_location)
+
+kable(t(dh[0:25]), caption="Summary of Company Location(1)", booktabs=T, linesep="") %>%
+  kable_styling(font_size = 6,latex_options = c("striped", "hold_position", "scale_down"))
+kable(t(dh[26:50]), caption="Summary of Company Location(2)", booktabs=T, linesep="") %>%
+  kable_styling(font_size = 6,latex_options = c("striped", "hold_position", "scale_down"))
+```
+
+The company_size variable is also of note: it has three potential variables, S for small, M for medium, and L for large. Its distribution of counts is listed in Table 9. 
+```{r echo = FALSE, results='asis'}
+kable(t(table(df$company_size)), caption="Summary of Company Size", booktabs=T) %>%
+  kable_styling(font_size=6,latex_options = c("striped", "hold_position"))
+```
+\newpage
 ## 4. Potential challenges
-Describe aspects of the data that may present challenges in the modeling stage. For example, might certain categorical variables need to be collapsed? Is there a lot of missingness? Could the size of the dataset present model selection challenges?
+A challenge we'll need to address before modeling is the amount of job titles that are present in our data. To solve this, we will either collaspe certain job titles into relevant categories or exclude job titles based on some metric. In that, if the job title "NLP Engineer" only shows up once, we may decide to drop it and all other job titles with similar counts. This decision will be informed by domain knowledge and field experts. 
+We face a similar problem with employee_residence and company_location. Not only is more than half of our data from the United States, Great Britian, and Canada, but the two variables are also highly correlated. Because we're investigating the relationship between work place attributes and the remote-ratio, we will include both location-based variables. 
+There are various common data issues that need to be addressed before modeling. We consider them below. 
+Messy data is defined to be a dataset where values are unstandardized, unorganized, or bias. Largely, our data is clean. The only potential messiness in our data comes from the large number of job titles as mentioned above. 
+Another common data issue is a lack of data. As our data has 607 entries, we do not face this problem. 
+Finally, confounding variables can cause modeling issues as there may be variables that are related to our questions at hand that are not present in our data. Because our research questions are somewhat poignant in their phrasing, we will not encounter this as a data issue. One might suppose that a level of education may have an effect on a data scientist's salary as it tends to have an effect in other fields. However, because data science is a relatively new field, there are not much data on whether or not a higher-education degree has an effect on the ensuing salary. For this reason, we find no issue in assuming it has marginal effect.
