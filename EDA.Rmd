@@ -59,9 +59,41 @@ Our first outcome variable, salary in USD, ranged from USD2,859 to USD600,000. D
 The second biggest respondents are Mid/Intermediate Level employee (35%), which majority working fully remote (54%), full in office (26%), or hybrid (20%). Most of the Mid/Intermediate Level employee works in medium size companies (46%), while the rest are working in large companies (40%) or small companies (14%). Most of their employment status are Full-Time (97%), while the rest are Contracts, Freelance, or Part-Time employee.
 The remaining respondents are Entry/Junior Level employee (15%) and Executive/Director level (4%).
 
-There are 50 different company location, which mostly in the US (58%), followed by Great Britain (8%), Canada (5%), and the rest of the world. While the employee residence data shows that respondents live in 57 different country, probably made possible by the ability to work remotely. Most of the respondents lived in the US (55%), followed by Great Britain (7%), India (5%), and the rest of the world. There are 50 different job titles in this dataset, but all of them are in the field of data science. The job title variable is dominated by data scientist (24%), data engineer (22%), data analyst (16%), while the rest are varied but mostly have "engineer" or "data" in the title.
+There are 50 different company location, which mostly in the US (58%), followed by Great Britain (8%), Canada (5%), and the rest of the world. While the employee residence data shows that respondents live in 57 different country, probably made possible by the ability to work remotely. Most of the respondents lived in the US (55%), followed by Great Britain (7%), India (5%), and the rest of the world. There are 50 different job titles in this dataset, but all of them are in the field of data science. The job title variable is dominated by data scientist (24%), data engineer (22%), data analyst (16%), while the rest are varied but mostly have "engineer" or "data" in the title. Based on the barplot shown below, there are certain pattern from Remote Ratio, Company Size and Experience level when plotted against salary (in USD)
 
-```{r echo=FALSE ,message=FALSE, fig.width=6, fig.height=5, fig.align='center'}
+```{r include = TRUE, echo=FALSE ,message=FALSE, fig.width=6, fig.height=5, fig.align='center'}
+par(mfrow=c(2,2))
+e <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Histogram of Salary (in USD)") +
+#  facet_wrap(~company_size) +
+  theme(legend.position="none",axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
+f <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Remote Ratio") +
+  facet_wrap(~remote_ratio) +
+  theme(legend.position="none",axis.text.x = element_text(size = 4), axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
+g <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Company Size") +
+  facet_wrap(~company_size) +
+  theme(legend.position="none",axis.text.x = element_text(size = 4),axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
+h <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Experience Level") +
+  facet_wrap(~experience_level) +
+  theme(legend.position="none",axis.text.x = element_text(size = 5),axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
+
+figure1 <- ggarrange(e,f,g,h,
+                    ncol=2, nrow=2)
+figure1
+```
+
+```{r include=FALSE, echo=FALSE ,message=FALSE, fig.width=6, fig.height=5, fig.align='center'}
+# PLEASE READ
+# This is a different code to show range of salaries based on different filters, need your input which one should be included
+# This code is currently not included in the pdf output, but you can still run it if you want to see the result
+# To run it, please change include = FALSE to include = TRUE
 par(mfrow=c(2,2))
 a <- ggplot(df, aes(company_size)) + 
   geom_bar(aes(fill=experience_level)) +
@@ -90,41 +122,7 @@ figure
 
 ```
 
-```{r include = FALSE, echo=FALSE ,message=FALSE, fig.width=6, fig.height=5, fig.align='center'}
-# PLEASE READ
-# This is a different code to show range of salaries based on different filters, need your input which one should be included
-# This code is currently not included in the pdf output, but you can still run it if you want to see the result
-# To run it, please change include = FALSE to include = TRUE
-par(mfrow=c(2,2))
-e <- ggplot(df, aes(x = salary_in_usd)) + 
-  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-  ggtitle("Histogram of Salary (in USD)") +
-#  facet_wrap(~company_size) +
-  theme(legend.position="none",axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
-f <- ggplot(df, aes(x = salary_in_usd)) + 
-  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-  ggtitle("Salary (in USD) vs Remote Ratio") +
-  facet_wrap(~remote_ratio) +
-  theme(legend.position="none",axis.text.x = element_text(size = 5), axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
-g <- ggplot(df, aes(x = salary_in_usd)) + 
-  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-  ggtitle("Salary (in USD) vs Company Size") +
-  facet_wrap(~company_size) +
-  theme(legend.position="none",axis.text.x = element_text(size = 5),axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
-h <- ggplot(df, aes(x = salary_in_usd)) + 
-  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-  ggtitle("Salary (in USD) vs Experience Level") +
-  facet_wrap(~experience_level) +
-  theme(legend.position="none",axis.text.x = element_text(size = 5),axis.title = element_text(size = 8), plot.title = element_text(size=10,face="bold"))
 
-figure1 <- ggarrange(e,f,g,h,
-                    ncol=2, nrow=2)
-figure1
-
-## This is the possible text to be added with these barplots
-# Based on the barplot shown below, there are certain pattern from Remote Ratio, Company Size and Experience level when plotted against salary (in USD) 
-
-```
 
 ### 2.2. Descriptive stats and plots Answering question 2
 
