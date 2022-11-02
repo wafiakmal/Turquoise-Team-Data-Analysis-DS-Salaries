@@ -26,7 +26,7 @@ options(scipen=999)
 
 ## Models
 We will perform different models on the two research questions that we have separately:
-1. For the first question, our output/response variable is a continuous variable. Thus we first consider the Linear Regression Models. We assume the [`which variables???`] are the ones that might be potential ones that might increase the salary of data scientists. 
+1. For the first question, to examine the changes in Salary (USD), a continuous variable as our outcome/response variable, we are considering to use Linear Regression Models, more specifically, Multiple Linear Regression Models. We will fit and assess various models considering experience level, employment type, employee residence, remote ratio, company location and company size as variables. To find the best model in predicting Salary (USD), we will do the selections method mentioned in variable selection.
 2. For the second question, the response variable is a categorical variable with 3 levels. Thus the model choice from first question is not applicable here. We can use logistic regression in this case.
 
 ## Variable selection
