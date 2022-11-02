@@ -30,8 +30,8 @@ We will perform different models on the two research questions that we have sepa
 2. For the second question, the response variable is a categorical variable with 3 levels. Thus the model choice from first question is not applicable here. We can use logistic regression in this case.
 
 ## Variable selection
-1) Forward, backward,stepwise selection; AIC,BIC, Adjusted-R-Squared
-2) Chi-squared test and change in deviance
+1) For the first research question, since we are taking multi-linear regression model as our base model. We will use Forward, backward,stepwise selections to pick the best features. Besides, taking AIC,BIC, Adjusted-R-Squared into consideration is highly valued as well. Since forwad and backward selections have their own disadvantages and stepwise is the main selection we are taking into consideration.
+2) For the second research question, our response variable is a categorical variable with 3 levels. Thus to select features from multinomial logistic regression model, we will use chi-squared test and change in deviance to select the best model.
 
 ## Challenges
 TBH
