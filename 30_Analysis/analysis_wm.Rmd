@@ -1,0 +1,277 @@
+---
+title: "data_analysis"
+author: "Wafiakmal Miftah"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR2)
+library(kableExtra)
+library(stargazer)
+library(ggplot2)
+library(pROC)
+library(e1071) # confusion matrix
+library(caret)
+library(broom)
+library(gtsummary)
+library(ggeffects)
+library(marginaleffects)
+library(car)
+library(tidyverse)
+library(leaps)
+library(arm)
+library(nnet)
+library(knitr)
+library(MASS)
+library(summarytools)
+library(patchwork)
+library(gridExtra)
+```
+
+```{r echo= FALSE}
+df_raw <- read.csv('ds_salaries.csv')
+drop <- c("X","salary","salary_currency","work_year")
+df = df_raw[,!(names(df_raw) %in% drop)]
+#df$work_year <- as.factor(df$work_year)
+df$experience_level <- as.factor(df$experience_level)
+df$employment_type <- as.factor(df$employment_type)
+df$company_size <- as.factor(df$company_size)
+df$remote_ratio <- factor(df$remote_ratio,
+                          levels=c(0, 50, 100),
+                          labels=c("No Remote", "Hybrid", "Full Remote"))
+df$company_location <- factor(df$company_location,
+                              levels=c("AE","AS","AT","AU","BE","BR","CA","CH","CL","CN",
+                                       "CO","CZ","DE","DK","DZ","EE","ES","FR","GB","GR",
+                                       "HN","HR","HU","IE","IL","IN","IQ","IR","IT","JP",
+                                       "KE","LU","MD","MT","MX","MY","NG","NL","NZ","PK",
+                                       "PL","PT","US","VN","RO","RU","SG","SI","TR","UA"),
+                              labels=c("AS","OC","EU","OC","EU","SA","NA","EU","SA","AS",
+                                       "SA","EU","EU","EU","AF","EU","EU","EU","EU","EU",
+                                       "NA","EU","EU","EU","AS","AS","AS","AS","EU","AS",
+                                       "AF","EU","EU","EU","NA","AS","AF","EU","OC","AS",
+                                       "EU","EU","NA","AS","EU","EU","AS","EU","AS","NA"))
+df$employee_residence <- factor(df$employee_residence,
+                                levels=c("AE","AR","AT","AU","BE","BG","BO","BR","CA","CH",
+                                         "CL","CN","CO","CZ","DE","DK","DZ","EE","ES","FR",
+                                         "GB","GR","HK","HN","HR","HU","IE","IN","IQ","IR",
+                                         "IT","JE","JP","KE","LU","MD","MT","MX","MY","NG",
+                                         "NL","NZ","PH","PK","PL","PR","PT","RO","RS","RU",
+                                         "SG","SI","TN","TR","UA","US","VN"),
+                                labels=c("AS","OC","EU","OC","EU","EU","SA","SA","NA","EU",
+                                         "SA","AS","SA","EU","EU","EU","AF","EU","EU","EU",
+                                         "EU","EU","AS","NA","EU","EU","EU","AS","AS","AS",
+                                         "EU","EU","AS","AF","EU","EU","EU","NA","AS","AF",
+                                         "EU","OC","AS","AS","EU","NA","EU","EU","EU","EU",
+                                         "AS","EU","AF","AS","EU","NA","AS"))
+df$job_title <- factor(df$job_title,
+                       levels=c("3D Computer Vision Researcher","AI Scientist","Analytics Engineer","Applied Data Scientist","Applied Machine Learning Scientist","BI Data Analyst","Big Data Architect","Big Data Engineer","Business Data Analyst","Cloud Data Engineer","Computer Vision Engineer","Computer Vision Software Engineer","Data Analyst","Data Analytics Engineer","Data Analytics Lead","Data Analytics Manager","Data Architect","Data Engineer","Data Engineering Manager","Data Science Consultant","Data Science Engineer","Data Science Manager","Data Scientist","Data Specialist","Director of Data Engineering","Director of Data Science","ETL Developer","Finance Data Analyst","Financial Data Analyst","Head of Data","Head of Data Science","Head of Machine Learning","Lead Data Analyst","Lead Data Engineer","Lead Data Scientist","Lead Machine Learning Engineer","Machine Learning Developer","Machine Learning Engineer","Machine Learning Infrastructure Engineer","Machine Learning Manager","Machine Learning Scientist","Marketing Data Analyst","ML Engineer","NLP Engineer","Principal Data Analyst","Principal Data Engineer","Principal Data Scientist","Product Data Analyst","Research Scientist","Staff Data Scientist"),
+                       labels=c("Data Engineer","Data Scientist","Data Engineer","Data Scientist","Data Scientist","Data Analyst","Data Engineer","Data Engineer","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Engineer",
+"Data Scientist","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Scientist","ML Engineer",'Data Analyst','Data Engineer','Data Scientist',"ML Engineer","ML Engineer","ML Engineer","ML Engineer","ML Engineer",
+"ML Engineer","Data Analyst","ML Engineer","ML Engineer","Data Analyst","Data Engineer","Data Scientist","Data Analyst","Data Scientist","Data Scientist"))
+df<-df[!(df$company_location=="OC" | df$company_location=="AF" | df$company_location=="SA"),]
+df<-df[!(df$employee_residence=="OC" | df$employee_residence=="AF" | df$employee_residence=="SA"),]
+df= na.omit(df)
+df <- droplevels(df)
+
+smp_size <- floor(0.75 * nrow(df))
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(df)), size = smp_size)
+train <- df[train_ind, ]
+test <- df[-train_ind, ]
+```
+
+```{r eda categorical variable, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(df,aes(x=remote_ratio, y=salary_in_usd, fill=remote_ratio)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette="Greens") +
+  labs(x="Remote Ratio",y="Work Year") + 
+  theme_classic() + theme(legend.position="none")
+
+# boxplot(salary_in_usd~remote_ratio, data=train)
+```
+
+```{r eda categorical variablex, echo=FALSE, fig.width=12, fig.height=2.5}
+l1 <- ggplot(train,aes(x=company_location)) +
+  geom_histogram(stat='count', color="Black", fill="Green") +
+  labs(x="Company Location",y="Count") + 
+  theme_classic() + theme(legend.position="none")
+
+l2 <- ggplot(train,aes(x=employee_residence)) +
+  geom_histogram(stat='count', color="Black", fill="Red") +
+  labs(x="Employee Residence",y="Count") + 
+  theme_classic() + theme(legend.position="none")
+
+l3 <- ggplot(train,aes(x=job_title)) +
+  geom_histogram(stat='count', color="Black", fill="turquoise") +
+  labs(x="Job Title",y="Count") + 
+  theme_classic() + theme(legend.position="none")
+
+l4 <- ggplot(train,aes(x=remote_ratio)) +
+  geom_histogram(stat='count', color="Black", fill="turquoise") +
+  labs(x="Remote Status",y="Count") + 
+  theme_classic() + theme(legend.position="none")
+
+grid.arrange(l1, l2, l3, ncol=3, nrow = 1)
+```
+```{r eda categorical variablexx, echo=FALSE, fig.width=6, fig.height=2.5, warning=FALSE, message=FALSE}
+l5 <- ggplot(df) +
+    aes(x = job_title, fill = remote_ratio) +
+    geom_bar() + labs(x="Job Title",y="Count") +
+  theme_classic() + theme(legend.position="left")
+l5
+
+test <- chisq.test(table(df$remote_ratio, df$job_title))
+# stargazer(test, header=FALSE, digits=2, type='latex', no.space = TRUE, column.sep.width = "1pt", single.row = TRUE, title="Chi-Square Test of Independence")
+```
+
+```{r model for eis, echo=FALSE, fig.width=6, fig.height=2.5, warning=FALSE, message=FALSE, results='asis'}
+df$remote_ratio <- relevel(df$remote_ratio, ref="No Remote")
+df$job_title <- relevel(df$job_title, ref="Data Engineer")
+remotereg <- multinom(remote_ratio~., data = df, trace=FALSE)
+# summary(remotereg)
+
+z <- summary(remotereg)$coefficients/summary(remotereg)$standard.errors
+# z
+
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+# p
+
+tidy(remotereg, conf.int = TRUE) %>%
+  kable(booktabs=T, digits=2, format="latex", linesep="") %>%
+  kable_styling("basic", full_width = FALSE, position="center",latex_options = c("hold_position"))
+
+tidy(remotereg, conf.int = TRUE, exponentiate = TRUE) %>%
+  kable(booktabs=T, digits=2, format="latex", linesep="") %>%
+  kable_styling("basic", full_width = FALSE, position="center",latex_options = c("hold_position"))
+
+stargazer(remotereg, header=FALSE, digits=2, type='latex', no.space = TRUE, column.sep.width = "1pt", single.row = TRUE, title="Regression Result")
+
+mfx_jobtit <- marginaleffects(remotereg, variables = "job_title", type = "probs")
+
+tidy(mfx_jobtit) %>%
+  kable(booktabs=T, digits=2, format="latex", linesep="") %>%
+  kable_styling("basic", full_width = FALSE, position="center",latex_options = c("hold_position"))
+
+## Accuracy
+pred_remote_ratio<- predict(remotereg)
+Conf_mat <- confusionMatrix(as.factor(pred_remote_ratio),as.factor(df$remote_ratio))
+#Conf_mat$table
+#Conf_mat$overall["Accuracy"];
+#Conf_mat$byClass[,c("Sensitivity","Specificity")]
+
+tidy(Conf_mat$overall) %>%
+  kable(booktabs=T, digits=2, col.names = c("Items","Value"), format="latex", linesep="") %>%
+  kable_styling("basic", full_width = FALSE, position="center",latex_options = c("hold_position"))
+
+#stargazer(ac, header=FALSE, digits=2, type='latex', no.space = TRUE, column.sep.width = "1pt", single.row = TRUE, title="Regression Result")
+```
+
+```{r eda continuous variable, echo=FALSE, results='hide'}
+#table(df$remote_ratio, df$experience_level)
+exp_level <- prop.table(table(train$remote_ratio, train$experience_level), 2)
+
+kable(exp_level,col.names=c("Entry Level","Executive Level","Middle Level","Senior Level"), digits = 2,booktabs=T, caption = "Probability Table based on Experience Level", format="latex", linesep="") %>% kable_styling(position="center",latex_options = c("hold_position"))
+
+#table(df$remote_ratio, df$employment_type)
+emp_type <- prop.table(table(train$remote_ratio, train$employment_type), 2)
+
+kable(emp_type,col.names=c("Contract","Freelancer","Full Time","Part Time"), digits = 2,booktabs=T, caption = "Probability Table based on Employment Type", format="latex", linesep="") %>% kable_styling(position="center",latex_options = c("hold_position"))
+
+#table(df$remote_ratio, df$job_title)
+prop.table(table(train$remote_ratio, train$job_title), 2)
+
+#table(df$remote_ratio, df$employee_residence)
+prop.table(table(train$remote_ratio, train$employee_residence), 2)
+
+#table(df$remote_ratio, df$company_location)
+prop.table(table(train$remote_ratio, train$company_location), 2)
+
+#table(df$remote_ratio, df$company_size)
+prop.table(table(train$remote_ratio, train$company_size), 2)
+```
+
+```{r chi-sq test, echo = FALSE, results='hide'}
+chisq.test(table(train$remote_ratio, train$experience_level), 2)
+chisq.test(table(train$remote_ratio, train$employment_type), 2) # p-value high
+chisq.test(table(train$remote_ratio, train$job_title), 2) # p-value high
+chisq.test(table(train$remote_ratio, train$employee_residence), 2)
+chisq.test(table(train$remote_ratio, train$company_location), 2)
+chisq.test(table(train$remote_ratio, train$company_size), 2)
+```
+
+```{r checking the chi-sq value for each variable, echo=FALSE, results='asis'}
+remotereg <- multinom(remote_ratio~experience_level+employment_type+job_title+salary_in_usd+employee_residence+company_location+company_size,data=train, trace=FALSE)
+# check the variables one by one using chisquare test 
+
+#check experience_level
+reg_experience_level <-multinom(remote_ratio~+employment_type+job_title+salary_in_usd+employee_residence+remote_ratio+company_location+company_size, data = train,trace=FALSE)
+anova(remotereg, reg_experience_level, test = "Chisq")
+# 0.8967838, not sig
+
+# check employment_type
+reg_employment_type<-multinom(remote_ratio~experience_level+job_title+salary_in_usd+employee_residence+remote_ratio+company_location+company_size,data=train, trace=FALSE)
+anova(remotereg, reg_employment_type, test = "Chisq")
+# 0.08958627, not
+
+# check job_title
+reg_job_title<-multinom(remote_ratio~experience_level+employment_type+salary_in_usd+employee_residence+remote_ratio+company_location+company_size,data=train, trace=FALSE)
+anova(remotereg, reg_job_title, test = "Chisq")
+# 0.02181445, sig
+
+# salary_in_usd
+reg_salary_in_usd<-multinom(remote_ratio~experience_level+job_title+employee_residence+remote_ratio+company_location+company_size,data=train, trace=FALSE)
+anova(remotereg, reg_salary_in_usd, test = "Chisq")
+# 0.0783847, not
+
+# employee_residence
+reg_employee_residence<-multinom(remote_ratio~experience_level+job_title+salary_in_usd+remote_ratio+company_location+company_size,data=train, trace=FALSE)
+anova(remotereg, reg_employee_residence, test = "Chisq")
+# 0.1042336, not
+
+# company_location
+reg_company_location<-multinom(remote_ratio~experience_level+job_title+salary_in_usd+employee_residence+remote_ratio+company_size,data=train, trace=FALSE)
+anova(remotereg, reg_company_location, test = "Chisq")
+# 0.01949026, sig
+
+# company_size
+reg_company_size<-multinom(remote_ratio~experience_level+job_title+salary_in_usd+employee_residence+remote_ratio+company_location,data=train, trace=FALSE)
+anova(remotereg, reg_company_size, test = "Chisq")
+# 5.956273e-07, sig
+```
+
+```{r final model, echo=FALSE}
+reg_company_final <- multinom(remote_ratio~experience_level+employment_type+job_title+salary_in_usd+employee_residence+company_location, data=train, trace=FALSE)
+anova(remotereg, reg_company_final, test = "Chisq")
+summary(reg_company_final)
+
+reg_company_final_1 <- multinom(remote_ratio~job_title+company_location+company_size, data=train, trace=FALSE)
+anova(remotereg, reg_company_final_1, test = "Chisq")
+summary(reg_company_final_1)
+```
+
+```{r doing pred, echo=FALSE}
+## Accuracy
+pred_remote_ratio<- predict(reg_company_final_1)
+Conf_mat <- confusionMatrix(as.factor(pred_remote_ratio),train$remote_ratio)
+Conf_mat$table
+Conf_mat$overall["Accuracy"];
+Conf_mat$byClass[,c("Sensitivity","Specificity")]
+```
+
+```{r, echo=FALSE}
+## Individual ROC curves for the different levels
+#here we basically treat each level as a standalone level
+par(mfcol = c(2,2))
+predprobs <- fitted(remotereg) 
+roc((train$remote_ratio=="No Remote"),predprobs[,1],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
+    col="red3",percent=T,main="Group 1")
+roc((train$remote_ratio=="Hybrid"),predprobs[,2],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
+    col="gray3",percent=T,main="Group 2")
+roc((train$remote_ratio=="Full Remote"),predprobs[,3],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
+    col="green3",percent=T,main="Group 3")
+```
+
+

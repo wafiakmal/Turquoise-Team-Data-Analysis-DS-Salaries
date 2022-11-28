@@ -1,12 +1,3 @@
----
-title: "data_analysis"
-author: "Wafiakmal Miftah"
-date: "`r Sys.Date()`"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(ISLR2)
 library(kableExtra)
 library(stargazer)
@@ -20,17 +11,10 @@ library(arm)
 library(nnet)
 library(knitr)
 library(MASS)
-```
+library(summarytools)
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r}
 df_raw <- read.csv('ds_salaries.csv')
-drop <- c("X","salary_currency","salary","work_year")
+drop <- c("X","salary","salary_currency","work_year")
 df = df_raw[,!(names(df_raw) %in% drop)]
 #df$work_year <- as.factor(df$work_year)
 df$experience_level <- as.factor(df$experience_level)
@@ -44,12 +28,12 @@ df$company_location <- factor(df$company_location,
                                        "CO","CZ","DE","DK","DZ","EE","ES","FR","GB","GR",
                                        "HN","HR","HU","IE","IL","IN","IQ","IR","IT","JP",
                                        "KE","LU","MD","MT","MX","MY","NG","NL","NZ","PK",
-                                       "PL","PT","US","VN"),
+                                       "PL","PT","US","VN","RO","RU","SG","SI","TR","UA"),
                               labels=c("AS","OC","EU","OC","EU","SA","NA","EU","SA","AS",
                                        "SA","EU","EU","EU","AF","EU","EU","EU","EU","EU",
                                        "NA","EU","EU","EU","AS","AS","AS","AS","EU","AS",
                                        "AF","EU","EU","EU","NA","AS","AF","EU","OC","AS",
-                                       "EU","EU","NA","AS"))
+                                       "EU","EU","NA","AS","EU","EU","AS","EU","AS","NA"))
 df$employee_residence <- factor(df$employee_residence,
                                 levels=c("AE","AR","AT","AU","BE","BG","BO","BR","CA","CH",
                                          "CL","CN","CO","CZ","DE","DK","DZ","EE","ES","FR",
@@ -66,80 +50,22 @@ df$employee_residence <- factor(df$employee_residence,
 df$job_title <- factor(df$job_title,
                        levels=c("3D Computer Vision Researcher","AI Scientist","Analytics Engineer","Applied Data Scientist","Applied Machine Learning Scientist","BI Data Analyst","Big Data Architect","Big Data Engineer","Business Data Analyst","Cloud Data Engineer","Computer Vision Engineer","Computer Vision Software Engineer","Data Analyst","Data Analytics Engineer","Data Analytics Lead","Data Analytics Manager","Data Architect","Data Engineer","Data Engineering Manager","Data Science Consultant","Data Science Engineer","Data Science Manager","Data Scientist","Data Specialist","Director of Data Engineering","Director of Data Science","ETL Developer","Finance Data Analyst","Financial Data Analyst","Head of Data","Head of Data Science","Head of Machine Learning","Lead Data Analyst","Lead Data Engineer","Lead Data Scientist","Lead Machine Learning Engineer","Machine Learning Developer","Machine Learning Engineer","Machine Learning Infrastructure Engineer","Machine Learning Manager","Machine Learning Scientist","Marketing Data Analyst","ML Engineer","NLP Engineer","Principal Data Analyst","Principal Data Engineer","Principal Data Scientist","Product Data Analyst","Research Scientist","Staff Data Scientist"),
                        labels=c("Data Engineer","Data Scientist","Data Engineer","Data Scientist","Data Scientist","Data Analyst","Data Engineer","Data Engineer","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Engineer",
-"Data Scientist","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Scientist","Machine Learning Engineer",'Data Analyst','Data Engineer','Data Scientist',"Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer",
-"Machine Learning Engineer","Data Analyst","Machine Learning Engineer","Machine Learning Engineer","Data Analyst","Data Engineer","Data Scientist","Data Analyst","Data Scientist","Data Scientist"))
-```
+                                "Data Scientist","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Scientist","Machine Learning Engineer",'Data Analyst','Data Engineer','Data Scientist',"Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer",
+                                "Machine Learning Engineer","Data Analyst","Machine Learning Engineer","Machine Learning Engineer","Data Analyst","Data Engineer","Data Scientist","Data Analyst","Data Scientist","Data Scientist"))
+df<-df[!(df$company_location=="OC" | df$company_location=="AF" | df$company_location=="SA"),]
+df<-df[!(df$employee_residence=="OC" | df$employee_residence=="AF" | df$employee_residence=="SA"),]
+df= na.omit(df)
+df <- droplevels(df)
 
-```{r}
-ggplot(df,aes(x=remote_ratio, y=work_year, fill=remote_ratio)) +
+smp_size <- floor(0.75 * nrow(df))
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(df)), size = smp_size)
+train <- df[train_ind, ]
+test <- df[-train_ind, ]
+
+ggplot(df, aes(x=remote_ratio, y=salary_in_usd, fill=remote_ratio)) +
   geom_boxplot() +
   scale_fill_brewer(palette="Greens") +
-  labs(x="Remote Ratio",y="Work Year") + 
+  labs(x="Remote Working Status",y="Salary") + 
   theme_classic() + theme(legend.position="none")
-
-ggplot(df,aes(x=remote_ratio, y=salary_in_usd, fill=remote_ratio)) +
-  geom_boxplot() +
-  scale_fill_brewer(palette="Greens") +
-  labs(x="Remote Ratio",y="Work Year") + 
-  theme_classic() + theme(legend.position="none")
-
-boxplot(work_year~remote_ratio, data=df)
-```
-```{r}
-#table(df$remote_ratio, df$experience_level)
-prop.table(table(df$remote_ratio, df$experience_level), 2)
-
-#table(df$remote_ratio, df$employment_type)
-prop.table(table(df$remote_ratio, df$employment_type), 2)
-
-#table(df$remote_ratio, df$job_title)
-prop.table(table(df$remote_ratio, df$job_title), 2)
-
-#table(df$remote_ratio, df$employee_residence)
-prop.table(table(df$remote_ratio, df$employee_residence), 2)
-
-#table(df$remote_ratio, df$company_location)
-prop.table(table(df$remote_ratio, df$company_location), 2)
-
-#table(df$remote_ratio, df$company_size)
-prop.table(table(df$remote_ratio, df$company_size), 2)
-```
-```{r}
-chisq.test(table(df$remote_ratio, df$experience_level), 2)
-chisq.test(table(df$remote_ratio, df$employment_type), 2)
-chisq.test(table(df$remote_ratio, df$job_title), 2) # p-value high
-chisq.test(table(df$remote_ratio, df$employee_residence), 2)
-chisq.test(table(df$remote_ratio, df$company_location), 2)
-chisq.test(table(df$remote_ratio, df$company_size), 2)
-```
-```{r}
-remotereg <- multinom(remote_ratio~.,data=df, trace=FALSE)
-summary(remotereg)
-confint(remotereg)
-
-exp(coef(remotereg))
-exp(confint(remotereg))
-
-output1 <- summary(remotereg)
-z_value <- output1$coefficients/output1$standard.errors
-p_value <- (1 - pnorm(abs(z_value), 0, 1))*2 
-#we are using two-tailed z test, that is, a normal approximation
-full_summary1 <- lapply(c(2:4),function(x) rbind(output1$coefficients[as.character(x),],
-                                                 output1$standard.errors[as.character(x),],
-                                                 z_value[as.character(x),],
-                                                 p_value[as.character(x),]))
-kable(lapply(full_summary1,function(x) {rownames(x) <- c("Coefficient","Std. Errors","z-value","p-value"); x}))
-#too many p-values to check simulataneously, let's use deviance test instead
-
-#checking 1 by 1
-remoteregno <- multinom(viewcat ~ viewenc + cprenumb + cprelet + cpreform + cpreclasf 
-                              + cprerelat + cprebody  + cage, data = sesame)
-anova(viewcatreg1, viewcatreg1nosite, test = "Chisq")
-```
-
-```{r pred}
-predprobs <- fitted(remotereg)
-predprobs[1:5,]
-```
-
-
