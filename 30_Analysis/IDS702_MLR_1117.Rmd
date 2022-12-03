@@ -1,0 +1,273 @@
+---
+title: "IDS702_MLR_1117"
+output:
+  pdf_document:
+    df_print: paged
+---
+```{r echo = FALSE}
+#knitr::opts_chunk$set(error = TRUE)
+setwd("/Users/belladu/Desktop/IDS702 Data Modelling and Representation")
+```
+
+```{r setup, include=FALSE,echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ISLR2)
+library(kableExtra)
+library(stargazer)
+library(ggplot2)
+library(pROC)
+library(e1071) # confusion matrix
+library(caret)
+library(tidyverse)
+library(leaps)
+```
+
+
+```{r echo = FALSE, include = FALSE}
+df_raw <- read.csv('ds_salaries.csv')
+drop <- c("X","salary_currency","salary","work_year")
+df = df_raw[,!(names(df_raw) %in% drop)]
+#df$work_year <- as.factor(df$work_year)
+df$experience_level <- as.factor(df$experience_level)
+df$employment_type <- as.factor(df$employment_type)
+df$company_size <- as.factor(df$company_size)
+df$remote_ratio <- factor(df$remote_ratio,
+                          levels=c(0, 50, 100),
+                          labels=c("No Remote", "Hybrid", "Full Remote"))
+
+df$company_location <- factor(df$company_location,
+                              levels=c("AE","AS","AT","AU","BE","BR","CA","CH","CL","CN",
+                                       "CO","CZ","DE","DK","DZ","EE","ES","FR","GB","GR",
+                                       "HN","HR","HU","IE","IL","IN","IQ","IR","IT","JP",
+                                       "KE","LU","MD","MT","MX","MY","NG","NL","NZ","PK",
+                                       "PL","PT","US","VN", "RO", "RU", "SG", "SI", "TR","UA"),
+                              labels=c("AS","OC","EU","OC","EU","SA","NA","EU","SA","AS",
+                                       "SA","EU","EU","EU","AF","EE","EU","EU","EU","EU",
+                                       "NA","EU","EU","EU","AS","AS","AS","AS","EU","AS",
+                                       "AF","EU","EU","EU","NA","AS","AF","EU","OC","AS",
+                                       "EU","EU","NA","AS","EU", "EU", "AS", "EU","AS","NA"))
+
+df$employee_residence <- factor(df$employee_residence,
+                                levels=c("AE","AR","AT","AU","BE","BG","BO","BR","CA","CH",
+                                         "CL","CN","CO","CZ","DE","DK","DZ","EE","ES","FR",
+                                         "GB","GR","HK","HN","HR","HU","IE","IN","IQ","IR",
+                                         "IT","JE","JP","KE","LU","MD","MT","MX","MY","NG",
+                                         "NL","NZ","PH","PK","PL","PR","PT","RO","RS","RU",
+                                         "SG","SI","TN","TR","UA","US","VN"),
+                                labels=c("AS","OC","EU","OC","EU","EU","SA","SA","NA","EU",
+                                         "SA","AS","SA","EU","EU","EU","AF","EU","EU","EU",
+                                         "EU","EU","AS","NA","EU","EU","EU","AS","AS","AS",
+                                         "EU","EU","AS","AF","EU","EU","EU","NA","AS","AF",
+                                         "EU","OC","AS","AS","EU","NA","EU","EU","EU","EU",
+                                         "AS","EU","AF","AS","EU","NA","AS"))
+df$job_title <- factor(df$job_title,
+                       levels=c("3D Computer Vision Researcher","AI Scientist","Analytics Engineer","Applied Data Scientist","Applied Machine Learning Scientist","BI Data Analyst","Big Data Architect","Big Data Engineer","Business Data Analyst","Cloud Data Engineer","Computer Vision Engineer","Computer Vision Software Engineer","Data Analyst","Data Analytics Engineer","Data Analytics Lead","Data Analytics Manager","Data Architect","Data Engineer","Data Engineering Manager","Data Science Consultant","Data Science Engineer","Data Science Manager","Data Scientist","Data Specialist","Director of Data Engineering","Director of Data Science","ETL Developer","Finance Data Analyst","Financial Data Analyst","Head of Data","Head of Data Science","Head of Machine Learning","Lead Data Analyst","Lead Data Engineer","Lead Data Scientist","Lead Machine Learning Engineer","Machine Learning Developer","Machine Learning Engineer","Machine Learning Infrastructure Engineer","Machine Learning Manager","Machine Learning Scientist","Marketing Data Analyst","ML Engineer","NLP Engineer","Principal Data Analyst","Principal Data Engineer","Principal Data Scientist","Product Data Analyst","Research Scientist","Staff Data Scientist"),
+                       labels=c("Data Engineer","Data Scientist","Data Engineer","Data Scientist","Data Scientist","Data Analyst","Data Engineer","Data Engineer","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Engineer",
+"Data Scientist","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Scientist","Machine Learning Engineer",'Data Analyst','Data Engineer','Data Scientist',"Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer","Machine Learning Engineer",
+"Machine Learning Engineer","Data Analyst","Machine Learning Engineer","Machine Learning Engineer","Data Analyst","Data Engineer","Data Scientist","Data Analyst","Data Scientist","Data Scientist"))
+
+df<-df[!(df$company_location=="OC" | df$company_location=="AF" | df$company_location=="SA"),]
+df<-df[!(df$employee_residence=="OC" | df$employee_residence=="AF" | df$employee_residence=="SA"),]
+df$job_title <- relevel(df$job_title, ref = "Machine Learning Engineer")
+#df= na.omit(df)
+```
+
+```{r include = FALSE, echo = FALSE}
+#table(df$remote_ratio, df$experience_level)
+prop.table(table(df$remote_ratio, df$experience_level), 2)
+#table(df$remote_ratio, df$employment_type)
+prop.table(table(df$remote_ratio, df$employment_type), 2)
+#table(df$remote_ratio, df$job_title)
+prop.table(table(df$remote_ratio, df$job_title), 2)
+#table(df$remote_ratio, df$employee_residence)
+prop.table(table(df$remote_ratio, df$employee_residence), 2)
+#table(df$remote_ratio, df$company_location)
+prop.table(table(df$remote_ratio, df$company_location), 2)
+#table(df$remote_ratio, df$company_size)
+prop.table(table(df$remote_ratio, df$company_size), 2)
+```
+
+```{r include = FALSE}
+chisq.test(table(df$remote_ratio, df$experience_level), 2)
+chisq.test(table(df$remote_ratio, df$employment_type), 2)
+chisq.test(table(df$remote_ratio, df$job_title), 2) # p-value high
+chisq.test(table(df$remote_ratio, df$employee_residence), 2)
+chisq.test(table(df$remote_ratio, df$company_location), 2)
+chisq.test(table(df$remote_ratio, df$company_size), 2)
+```
+
+- Based on our guesses, we assume that a larger `company_size`, full time as the `employment_type`, higher `experience_level`, and a more "hardcore" `employment_type` will lead to a higher `salary_in_usd`. Thus the `model1` is our preliminary guess on the predictors.
+
+```{r include = FALSE, echo=FALSE}
+model1 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level, data = df)
+summary(model1)
+```
+
+```{r results='asis', echo=FALSE, include=FALSE}
+stargazer(model1,digits=2, header = F, type = 'latex',no.space = TRUE, column.sep.width = "3pt", font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+
+- From the baselines model above, we can see that there are something that are statistically significant. For example, if the job title is "Principal Data Engineer", "Financial Data Analyst", "Data Analytics Lead", "Data Analytics Engineer", then these will be the effective predictors of `salary_in_usd` that will likely be the predictors that drastically increase the salary.
+- This `model1` is statistically significant. The adjusted R-squared that we got is 0.2793, which is not too high. Thus we are trying to explore better linear models to fit the data.
+- In the next few models, I will try out more combinations before using forward,backward,and stepwise selection to select the features.
+```{r include = FALSE}
+model2 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level + company_location + remote_ratio, data = df)
+summary(model2)
+```
+- In the model above, we added two extra features into the model: `remote_ratio` and `salary_currency`. The reason why we consider these two variables are that: If the position is remote, we consider that job should play an important role in the company and expect a higher salaries. The currency matters because in some more underdeveloped countries with their own currency will lead to a lower salary in terms of their national economic status. The p-value we get here is < 2.2e-16, which means that this model is statistically significant with an adjusted R-squared of 0.4347.
+- Something to notice is that none of the `company_location` has a p-value that is smaller than the threshold, same to the `remote_ratio`.
+
+```{r include = FALSE}
+model3 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level + remote_ratio + company_location + employee_residence, data = df)
+summary(model3)
+```
+- We added two more predictors in the `model3`, `employee_residence` and `company_location`.
+- The p-value we get from `model3` is < 2.2e-16, which means that this model is statistically significant with an adjusted R-squared of 0.4601, which explains 46.01% of the variation in `model3` can be accounted by these predictors.
+```{r echo = FALSE, include=FALSE}
+df
+```
+
+
+```{r echo = FALSE, include=FALSE}
+library(MASS)
+#df<-na.omit(df)
+# Fit the full model 
+full.model <- lm(salary_in_usd ~., data = df)
+# Stepwise regression model
+step.model <- step(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+
+```{r echo = FALSE, include=FALSE}
+step.model$anova
+step.model$coefficients
+```
+
+
+```{r echo = FALSE, include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+step.model <- train(salary_in_usd ~., data = df,
+                    method = "leapSeq", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+step.model$results
+```
+
+```{r echo = FALSE, include=FALSE}
+step.model$bestTune
+```
+
+```{r echo = FALSE, include=FALSE}
+summary(step.model$finalModel)
+```
+
+```{r echo = FALSE, include=FALSE}
+coef(step.model$finalModel, 8)
+```
+
+
+```{r include = FALSE}
+model4 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model4)
+```
+
+```{r echo= FALSE, include=FALSE}
+summary(model4)
+```
+
+```{r echo=FALSE,include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+backward.model <- train(salary_in_usd ~., data = df,
+                    method = "leapBackward", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+backward.model$results
+```
+```{r echo = FALSE, include=FALSE}
+backward.model$bestTune
+```
+
+```{r echo = FALSE, include=FALSE}
+summary(backward.model$finalModel)
+```
+
+```{r echo = FALSE}
+coef(backward.model$finalModel, 6)
+```
+```{r include = FALSE}
+model5 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model5)
+```
+
+```{r echo = FALSE, include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+forward.model <- train(salary_in_usd ~., data = df,
+                    method = "leapForward", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+forward.model$results
+```
+
+```{r include= FALSE, echo=FALSE}
+forward.model$bestTune
+```
+```{r}
+coef(forward.model$finalModel, 8)
+```
+
+```{r include = FALSE}
+model6 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model6)
+```
+
+```{r include=FALSE,echo =FALSE}
+invisible(roc(df$salary_in_usd,fitted(backward.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+
+```{r include=FALSE,echo =FALSE}
+invisible(roc(df$salary_in_usd,fitted(forward.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+```{r include = FALSE, echo = FALSE}
+invisible(roc(df$salary_in_usd,fitted(step.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+
+Final model is here:
+```{r include = FALSE, echo = FALSE}
+model6
+```
+
+```{r results='asis', echo=FALSE}
+stargazer(model6,digits=2, header = F, type = 'latex',no.space = TRUE, column.sep.width = "3pt", font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+- To check the assumptions for Linear Regression, we need to make sure the following:
+1. Linearity
+2. Equal Variance of Error Terms  (Heteroscedasticity)
+3. Independence of Error Terms
+4. Normality of Error Terms
+5. Leverage Points and Outliers --> Influential Points
+- I have plotted the residuals vs. each predictor, residual vs. fitted values, Q-Q plots. These three files helped us to check if the assumptions are met. In the residual vs. fitted values, We find out that there is no obvious pattern/trend in the plot, which satisfy the assumption of Independence of Error Terms. There are an obvious funnel-shape trend in the plot. Thus, it meets the assumption of Equal Variance of Error Terms because the points are pretty equally spread out around the y = 0 line.
+- In the plot of residual vs. the predictor, it has no obvious trend/curve that is slightly not linear, and it agrees the assumption of linearity. Lastly, when we checked the Q-Q Plot, the points are very close to the 45-degree line except for a few points. Thus the last assumption of normality of error terms are checked.
+- The regression assumptions are  plausible because 1) Linearity match rigorously; 2)Independence of Error Terms; 3)the residual plots does not show any heteroscedasticity; 4) Normality of Error Terms.
+```{r echo = FALSE}
+plot(model6, which = 1)
+```
+
+```{r echo = FALSE}
+plot(model6, which = 2)
+```
+```{r echo = FALSE}
+plot(model6, which = 3)
+```
