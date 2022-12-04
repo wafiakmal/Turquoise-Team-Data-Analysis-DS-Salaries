@@ -1,5 +1,5 @@
 ---
-title: "IDS702_Turquoise_Final_Project"
+title: "IDS702 Turquoise Final Project"
 author: "Beibei Du, Wafiakmal Miftah, Suzanna Thompson, Alisa Tian"
 output: 
   pdf_document: default
@@ -87,7 +87,8 @@ This analysis aims to answer these questions:
 1. Which factors are associated with an increase in salary for data science jobs? (Continuous outcome)
 2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome) For this question, there are three possible values for the remote work ratio, 0, 50, and 100; these signify an in-person job, a hybrid job, and a fully remote job, respectively.
 
-The data used in this project comes from Kaggle with 607 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
+The data used in this project comes from Kaggle with 607 observation with 11 variables(Bhatia, 2022). This dataset has no null or missing value. 
+
 The variables in this dataset are:
 
 - Work Year = The year salary was paid.
@@ -454,3 +455,15 @@ In order to increase the accuracy of our model, some of the potential for future
 1. Adding interaction term for job title and experience level
 2. Focusing the study in one continent, such as the United States and adding detail for each states and county.
 3. Trying an ordinal model and assess the model using multinomial model.
+\vspace*{1\baselineskip} 
+
+\centerline{\textbf{References}}
+
+Bhatia, R. (2022, May 1). \textit{Data Science Job Salaries}. Retrieved September 30, 2022, from Kaggle: https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries 
+\vspace*{1\baselineskip} 
+
+Davenport, T. H., &amp; Patil, D. J. (2022, July 21). Is data scientist still the sexiest job of the 21st century? \textit{Harvard Business Review}. Retrieved December 3, 2022, from https://hbr.org/2022/07/is-data-scientist-still-the-sexiest-job-of-the-21st-century 
+\vspace*{1\baselineskip} 
+
+Gifford, J. (2022, March 15). Remote Working: Unprecedented Increase. \textit{Human Resource Development International}, 10.
+
