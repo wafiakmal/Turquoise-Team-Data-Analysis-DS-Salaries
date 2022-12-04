@@ -93,7 +93,7 @@ ggplot(df,aes(x=remote_ratio, y=salary_in_usd, fill=remote_ratio)) +
 # boxplot(salary_in_usd~remote_ratio, data=train)
 ```
 
-```{r eda categorical variablex, echo=FALSE, fig.width=12, fig.height=2.5}
+```{r eda categorical variablex, echo=FALSE, fig.width=12, fig.height=2.5, warning=FALSE, message=FALSE}
 l1 <- ggplot(train,aes(x=company_location)) +
   geom_histogram(stat='count', color="Black", fill="Green") +
   labs(x="Company Location",y="Count") + 
@@ -130,7 +130,7 @@ test <- chisq.test(table(df$remote_ratio, df$job_title))
 ```{r model for eis, echo=FALSE, fig.width=6, fig.height=2.5, warning=FALSE, message=FALSE, results='asis'}
 df$remote_ratio <- relevel(df$remote_ratio, ref="No Remote")
 df$job_title <- relevel(df$job_title, ref="Data Engineer")
-remotereg <- multinom(remote_ratio~., data = df, trace=FALSE)
+remotereg <- multinom(remote_ratio~experience_level+employment_type+job_title+employee_residence+company_location+company_size, data = df, trace=FALSE)
 # summary(remotereg)
 
 z <- summary(remotereg)$coefficients/summary(remotereg)$standard.errors
@@ -169,7 +169,7 @@ tidy(Conf_mat$overall) %>%
 #stargazer(ac, header=FALSE, digits=2, type='latex', no.space = TRUE, column.sep.width = "1pt", single.row = TRUE, title="Regression Result")
 ```
 
-```{r eda continuous variable, echo=FALSE, results='hide'}
+```{r eda continuous variable, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 #table(df$remote_ratio, df$experience_level)
 exp_level <- prop.table(table(train$remote_ratio, train$experience_level), 2)
 
@@ -193,7 +193,7 @@ prop.table(table(train$remote_ratio, train$company_location), 2)
 prop.table(table(train$remote_ratio, train$company_size), 2)
 ```
 
-```{r chi-sq test, echo = FALSE, results='hide'}
+```{r chi-sq test, echo = FALSE, results='hide', warning=FALSE, message=FALSE}
 chisq.test(table(train$remote_ratio, train$experience_level), 2)
 chisq.test(table(train$remote_ratio, train$employment_type), 2) # p-value high
 chisq.test(table(train$remote_ratio, train$job_title), 2) # p-value high
@@ -202,7 +202,7 @@ chisq.test(table(train$remote_ratio, train$company_location), 2)
 chisq.test(table(train$remote_ratio, train$company_size), 2)
 ```
 
-```{r checking the chi-sq value for each variable, echo=FALSE, results='asis'}
+```{r checking the chi-sq value for each variable, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
 remotereg <- multinom(remote_ratio~experience_level+employment_type+job_title+salary_in_usd+employee_residence+company_location+company_size,data=train, trace=FALSE)
 # check the variables one by one using chisquare test 
 
@@ -242,7 +242,7 @@ anova(remotereg, reg_company_size, test = "Chisq")
 # 5.956273e-07, sig
 ```
 
-```{r final model, echo=FALSE}
+```{r final model, echo=FALSE, warning=FALSE, message=FALSE}
 reg_company_final <- multinom(remote_ratio~experience_level+employment_type+job_title+salary_in_usd+employee_residence+company_location, data=train, trace=FALSE)
 anova(remotereg, reg_company_final, test = "Chisq")
 summary(reg_company_final)
@@ -267,11 +267,11 @@ Conf_mat$byClass[,c("Sensitivity","Specificity")]
 par(mfcol = c(2,2))
 predprobs <- fitted(remotereg) 
 roc((train$remote_ratio=="No Remote"),predprobs[,1],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
-    col="red3",percent=T,main="Group 1")
+    col="#B57288",percent=T,main="In-person")
 roc((train$remote_ratio=="Hybrid"),predprobs[,2],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
-    col="gray3",percent=T,main="Group 2")
+    col="#34495E",percent=T,main="Hybrid")
 roc((train$remote_ratio=="Full Remote"),predprobs[,3],plot=T,print.thres="best",legacy.axes=T,print.auc =T,
-    col="green3",percent=T,main="Group 3")
+    col="#008080",percent=T,main="Remote")
 ```
 
 

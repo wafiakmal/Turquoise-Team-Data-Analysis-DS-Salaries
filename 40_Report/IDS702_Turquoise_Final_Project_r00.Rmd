@@ -1,0 +1,416 @@
+---
+title: "IDS702_Turquoise_Final_Project"
+author: "Beibei Du, Wafiakmal Miftah, Suzanna Thompson, Alisa Tian"
+output: 
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+library(psych)
+library(ggplot2)
+library(ggpubr)
+options(scipen=999)
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR2)
+library(stargazer)
+library(pROC)
+library(e1071) # confusion matrix
+library(caret)
+library(tidyverse)
+library(leaps)
+library(arm)
+library(nnet)
+library(knitr)
+library(MASS)
+library(summarytools)
+library(broom) # tidy
+```
+
+```{r processing-data, echo = FALSE, results='hide'}
+df_raw <- read.csv('../00_Raw_Data/ds_salaries.csv')
+drop <- c("X","salary","salary_currency","work_year")
+df = df_raw[,!(names(df_raw) %in% drop)]
+#df$work_year <- as.factor(df$work_year)
+df$experience_level <- as.factor(df$experience_level)
+df$employment_type <- as.factor(df$employment_type)
+df$company_size <- as.factor(df$company_size)
+df$remote_ratio <- factor(df$remote_ratio,
+                          levels=c(0, 50, 100),
+                          labels=c("In-Person", "Hybrid", "Full Remote"))
+df$company_location <- factor(df$company_location,
+                              levels=c("AE","AS","AT","AU","BE","BR","CA","CH","CL","CN",
+                                       "CO","CZ","DE","DK","DZ","EE","ES","FR","GB","GR",
+                                       "HN","HR","HU","IE","IL","IN","IQ","IR","IT","JP",
+                                       "KE","LU","MD","MT","MX","MY","NG","NL","NZ","PK",
+                                       "PL","PT","US","VN","RO","RU","SG","SI","TR","UA"),
+                              labels=c("AS","OC","EU","OC","EU","SA","NA","EU","SA","AS",
+                                       "SA","EU","EU","EU","AF","EU","EU","EU","EU","EU",
+                                       "NA","EU","EU","EU","AS","AS","AS","AS","EU","AS",
+                                       "AF","EU","EU","EU","NA","AS","AF","EU","OC","AS",
+                                       "EU","EU","NA","AS","EU","EU","AS","EU","AS","NA"))
+df$employee_residence <- factor(df$employee_residence,
+                                levels=c("AE","AR","AT","AU","BE","BG","BO","BR","CA","CH",
+                                         "CL","CN","CO","CZ","DE","DK","DZ","EE","ES","FR",
+                                         "GB","GR","HK","HN","HR","HU","IE","IN","IQ","IR",
+                                         "IT","JE","JP","KE","LU","MD","MT","MX","MY","NG",
+                                         "NL","NZ","PH","PK","PL","PR","PT","RO","RS","RU",
+                                         "SG","SI","TN","TR","UA","US","VN"),
+                                labels=c("AS","OC","EU","OC","EU","EU","SA","SA","NA","EU",
+                                         "SA","AS","SA","EU","EU","EU","AF","EU","EU","EU",
+                                         "EU","EU","AS","NA","EU","EU","EU","AS","AS","AS",
+                                         "EU","EU","AS","AF","EU","EU","EU","NA","AS","AF",
+                                         "EU","OC","AS","AS","EU","NA","EU","EU","EU","EU",
+                                         "AS","EU","AF","AS","EU","NA","AS"))
+df$job_title <- factor(df$job_title,
+                       levels=c("3D Computer Vision Researcher","AI Scientist","Analytics Engineer","Applied Data Scientist","Applied Machine Learning Scientist","BI Data Analyst","Big Data Architect","Big Data Engineer","Business Data Analyst","Cloud Data Engineer","Computer Vision Engineer","Computer Vision Software Engineer","Data Analyst","Data Analytics Engineer","Data Analytics Lead","Data Analytics Manager","Data Architect","Data Engineer","Data Engineering Manager","Data Science Consultant","Data Science Engineer","Data Science Manager","Data Scientist","Data Specialist","Director of Data Engineering","Director of Data Science","ETL Developer","Finance Data Analyst","Financial Data Analyst","Head of Data","Head of Data Science","Head of Machine Learning","Lead Data Analyst","Lead Data Engineer","Lead Data Scientist","Lead Machine Learning Engineer","Machine Learning Developer","Machine Learning Engineer","Machine Learning Infrastructure Engineer","Machine Learning Manager","Machine Learning Scientist","Marketing Data Analyst","ML Engineer","NLP Engineer","Principal Data Analyst","Principal Data Engineer","Principal Data Scientist","Product Data Analyst","Research Scientist","Staff Data Scientist"),
+                       labels=c("Data Engineer","Data Scientist","Data Engineer","Data Scientist","Data Scientist","Data Analyst","Data Engineer","Data Engineer","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Analyst","Data Engineer","Data Engineer","Data Engineer","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Scientist","Data Engineer",
+"Data Scientist","Data Engineer","Data Analyst","Data Analyst","Data Analyst","Data Scientist","ML Engineer",'Data Analyst','Data Engineer','Data Scientist',"ML Engineer","ML Engineer","ML Engineer","ML Engineer","ML Engineer",
+"ML Engineer","Data Analyst","ML Engineer","ML Engineer","Data Analyst","Data Engineer","Data Scientist","Data Analyst","Data Scientist","Data Scientist"))
+df<-df[!(df$company_location=="OC" | df$company_location=="AF" | df$company_location=="SA"),]
+df<-df[!(df$employee_residence=="OC" | df$employee_residence=="AF" | df$employee_residence=="SA"),]
+df= na.omit(df)
+df <- droplevels(df)
+```
+
+## Abstract
+This analysis aims to find factors that affects data science job salaries and factors associated with working remotely from office. This factors can be found by analyzing a dataset consisting of data science job salaries around the globe with a few variables characterizing the respondent's current job obtained from Kaggle. We found that experience level (executive, senior, mid-level, in reference to entry-level) and company location (Europe and North America in reference to Asia) have significant relationship and tends to increased data science job salaries, while job title (data analyst in reference to data engineer) also have a significant relationship but tends to decrease data science job salaries. As for remote working, we found that job title, employment type, and company location having a significant relationship with remote ratio.
+
+## Introduction
+The data science field is sitting at the intersection of statistics and computer science. This intersection is proven by most data science jobs posting that require statistics analysis or data modeling using programming languages. In 2019, job postings for data science related jobs had risen by 256% (Davenport &amp; Patil, 2022). This trend raised the question about the salary potential of data science jobs in the future. Another rising question following the Covid-19 virus in 2020 is remote working. Which also raised the question about what factors affecting remote working in the field of data science (Gifford, 2022).
+
+This analysis aims to answer these questions:
+
+1. Which factors are associated with an increase in salary for data science jobs? (Continuous outcome)
+2. How do company size, company location, employment type, employee residence and job title affected the remote work ratio of a data scientist? (Discrete outcome) For this question, there are three possible values for the remote work ratio, 0, 50, and 100; these signify an in-person job, a hybrid job, and a fully remote job, respectively.
+
+The data used in this project comes from Kaggle with 607 observation with 11 variables. This dataset has no null or missing value. This is the link to original post: [\textcolor{blue}{Data Science Job Salaries}](https://www.kaggle.com/datasets/ruchi798/data-science-job-salaries)
+The variables in this dataset are:
+
+- Work Year = The year salary was paid.
+- Experience Level = Level of experience in the current job, categorized into Executive Level (EX), Senior Level (SE), Mid Level (MI), Entry Level (EN)
+- Employment Type = Employment type in the current job, categorized into Full-Time (FT), Part-Time (PT), Contract (CT), Freelance (FL)
+- Job Title = Job title in the current company with 50 unique entries
+- Salary = Annual gross salary in the specific currency
+- Salary Currency = Currency of the annual salary variable
+- Salary (in USD) = Normalized annual salary from the respective currency into USD
+- Employee Residence = Country of residence of each respondents with 57 unique values
+- Company Location = Country of company location with 50 unique values
+- Company Size = Company size based on number of employees, categorized into Small (S), Medium (M), Large (L)
+
+
+## Methods
+
+### Data
+
+```{r EDA-plot, include = TRUE, echo=FALSE ,message=FALSE, fig.width=6, fig.height=3.5, fig.align='center'}
+par(mfrow=c(2,2))
+a <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Histogram of Salary (in USD)") +
+      theme_bw()+ 
+  labs(x="Salary (USD)",y="Count")+
+#  facet_wrap(~company_size) +
+  theme(axis.text.y = element_text(size = 5),axis.text.x = element_text(size = 4),legend.position="none",axis.title = element_text(size = 8), plot.title = element_text(size=6,face="bold"))
+b <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Remote Ratio")+ 
+  labs(x="Salary (USD)",y="Count") +
+  facet_wrap(~remote_ratio) +
+      theme_bw()+
+  theme(legend.position="none",axis.text.x = element_text(size = 4), axis.text.y = element_text(size = 5),axis.title = element_text(size = 8), plot.title = element_text(size=6,face="bold"))
+c <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Company Size")+ 
+  labs(x="Salary (USD)",y="Count") +
+  facet_wrap(~company_size) +
+    theme_bw()+
+  theme(axis.text.y = element_text(size = 5),legend.position="none",axis.text.x = element_text(size = 4),axis.title = element_text(size = 8), plot.title = element_text(size=6,face="bold"))
+d <- ggplot(df, aes(x = salary_in_usd)) + 
+  geom_histogram(binwidth = 50000, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Salary (in USD) vs Experience Level")+ 
+  labs(x="Salary (USD)",y="Count") +
+  facet_wrap(~experience_level) +
+      theme_bw()+
+  theme(axis.text.y = element_text(size = 5),legend.position="none",axis.text.x = element_text(size = 5),axis.title = element_text(size = 8), plot.title = element_text(size=6,face="bold"))
+figure1 <- ggarrange(a,b,c,d,
+                    ncol=2, nrow=2)
+figure1
+```
+Our dataset has 11 variables, each already described in `introduction`. The first outcome variable, `salary (USD)`, has a right skewed distribution, which implied that our data has very few respondents with extremely high salary. This connects with the `experience level` variable that has small counts of `executive level`, as shown by the figure above. We decided to drop `salary` and `salary_currency` for obvious reason, and variable `work_year` because it is not relevant to answering the two research questions. We also collapsed some of the variable to lower unique value:
+
+1. Job Title: 50 similar job titles into 4 job titles, Data Analyst, Data Scientist, Data Engineer, Machine Learning Engineer
+2. Employee Residence: 50 countries into 3 different continents, Asia, North America, and Europe. We dropped countries from Africa and Oceania as both has number of respondents of less than 5.
+3. Company Location: 50 countries into 3 different continents, Asia, North America, and Europe. We dropped countries from Africa and Oceania as both has number of respondents of less than 5.
+
+Before we fit the model, all categorical variables is transformed from string to factor to ensure there's no typo and it will show up as its own level in the regression result.
+
+### Models and Model Assesment
+
+#### Question 1
+
+To examine the changes in Salary (USD), a continuous variable as our outcome/response variable, we are considering to use Linear Regression Models, more specifically, Multiple Linear Regression Models. We will fit and assess various models considering experience level, employment type, employee residence, remote ratio, job title, company location and company size as variables. We will use Forward, backward, stepwise selections to pick the best features. Besides, taking AIC, BIC, Adjusted-R-Squared into consideration is highly valued as well. Since forward and backward selections have their own disadvantages and stepwise is the main selection we are taking into consideration.
+
+#### Question 2
+
+The response variable (remote ratio) is a categorical variable with 3 levels: In-Person, Hybrid, and Fully Remote. Thus the multiple linear regression model from first question is not applicable here. In this case, we can use multinomial logistic regression model. The log odds of remote ration will be calculated as a combination of all the predictor variables we are interested in (such as the experience level, job title, employee residence, company location, and company size). We are excluding employment type, as the data is highly concentrated to Full-Time. Multinomial model usually used use chi-squared test and change in deviance test to select the best model. But in this case, because we only have 6 predictors, we use all the predictors and assess the model accuracy using confusion matrix and ROC curve. Lastly, for the second model, we do a base relevel to suits our interests, for variable `job title` into Data Engineer and for variable `remote ratio` into In-Person.
+
+
+## Results
+
+### Question 1
+
+Based on our guesses, we assume that a larger `company_size`, full time as the `employment_type`, higher `experience_level`, and a more "hardcore" `employment_type` will lead to a higher `salary_in_usd`. Thus the `model1` is our preliminary guess on the predictors.
+
+```{r include = FALSE, echo=FALSE}
+model1 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level, data = df)
+summary(model1)
+```
+
+```{r results='asis', echo=FALSE, include=TRUE}
+stargazer(model1,digits=2, header = F, type = 'latex',no.space = TRUE, font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+
+From the result of the baseline model above, we can see that there are something that are statistically significant. For example, if the job title is "Principal Data Engineer", "Financial Data Analyst", "Data Analytics Lead", "Data Analytics Engineer", then these will be the effective predictors of `salary_in_usd` that will likely be the predictors that drastically increase the salary.
+
+This `model1` is statistically significant. The adjusted R-squared that we got is 0.2793, which is not too high. Thus we are trying to explore better linear models to fit the data.
+
+In the next few models, we will try out more combinations before using forward, backward, and stepwise selection to select the features.
+
+```{r include = FALSE}
+model2 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level + company_location + remote_ratio, data = df)
+stargazer(model2,digits=2, header = F, type = 'latex',no.space = TRUE, font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+In the model above, we added two extra features into the model: `remote_ratio` and `salary_currency`. The reason why we consider these two variables are that: If the position is remote, we consider that job should play an important role in the company and expect a higher salaries. The currency matters because in some more underdeveloped countries with their own currency will lead to a lower salary in terms of their national economic status. The p-value we get here is < 2.2e-16, which means that this model is statistically significant with an adjusted R-squared of 0.4347.
+
+Something to notice is that none of the `company_location` has a p-value that is smaller than the threshold, same to the `remote_ratio`.
+
+```{r include = FALSE}
+model3 <- lm(salary_in_usd ~ company_size + employment_type + job_title + experience_level + remote_ratio + company_location + employee_residence, data = df)
+stargazer(model3,digits=2, header = F, type = 'latex',no.space = TRUE, font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+
+We added two more predictors in the `model3`, `employee_residence` and `company_location`. The p-value we get from `model3` is < 2.2e-16, which means that this model is statistically significant with an adjusted R-squared of 0.4601, which explains 46.01% of the variation in `model3` can be accounted by these predictors.
+
+```{r echo = FALSE, include=FALSE}
+# Fit the full model 
+full.model <- lm(salary_in_usd ~., data = df)
+# Stepwise regression model
+step.model <- step(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+
+```{r echo = FALSE, include=FALSE}
+step.model$anova
+step.model$coefficients
+```
+
+```{r echo = FALSE, include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+step.model <- train(salary_in_usd ~., data = df,
+                    method = "leapSeq", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+step.model$results
+```
+
+```{r echo = FALSE, include=FALSE}
+step.model$bestTune
+```
+
+```{r echo = FALSE, include=FALSE}
+summary(step.model$finalModel)
+```
+
+```{r echo = FALSE, include=FALSE}
+#coef(step.model$finalModel, 8)
+```
+
+
+```{r include = FALSE}
+model4 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model4)
+```
+
+```{r echo= FALSE, include=FALSE}
+summary(model4)
+```
+
+```{r echo=FALSE,include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+backward.model <- train(salary_in_usd ~., data = df,
+                    method = "leapBackward", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+backward.model$results
+```
+```{r echo = FALSE, include=FALSE}
+backward.model$bestTune
+```
+
+```{r echo = FALSE, include=FALSE}
+summary(backward.model$finalModel)
+```
+
+```{r echo = FALSE}
+#coef(backward.model$finalModel, 6)
+```
+
+```{r include = FALSE}
+model5 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model5)
+```
+
+```{r echo = FALSE, include=FALSE}
+set.seed(886)
+train.control <- trainControl(method = "cv", number = 20) # using cross-validation
+# Train the model
+forward.model <- train(salary_in_usd ~., data = df,
+                    method = "leapForward", 
+                    tuneGrid = data.frame(nvmax = 1:8),
+                    trControl = train.control
+                    )
+forward.model$results
+```
+
+```{r include= FALSE, echo=FALSE}
+forward.model$bestTune
+```
+```{r include= FALSE, echo=FALSE}
+coef(forward.model$finalModel, 8)
+```
+
+```{r include = FALSE}
+model6 <- lm(salary_in_usd~experience_level + job_title + company_location + remote_ratio, data = df)
+summary(model6)
+```
+
+```{r include=FALSE,echo =FALSE}
+invisible(roc(df$salary_in_usd,fitted(backward.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+
+```{r include=FALSE,echo =FALSE}
+invisible(roc(df$salary_in_usd,fitted(forward.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+```{r include = FALSE, echo = FALSE}
+invisible(roc(df$salary_in_usd,fitted(step.model),plot=T,print.thres=c(0.5),legacy.axes=T,
+print.auc =T,col="red3"))
+```
+
+Final model is here:
+```{r include = FALSE, echo = FALSE}
+model6
+```
+
+```{r results='asis', echo=FALSE}
+stargazer(model6,digits=2, header = F, type = 'latex',no.space = TRUE, column.sep.width = "3pt", font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+```
+- To check the assumptions for Linear Regression, we need to make sure the following:
+1. Linearity
+2. Equal Variance of Error Terms (Heteroscedasticity)
+3. Independence of Error Terms
+4. Normality of Error Terms
+5. Leverage Points and Outliers --> Influential Points
+- I have plotted the residuals vs. each predictor, residual vs. fitted values, Q-Q plots. These three files helped us to check if the assumptions are met. In the residual vs. fitted values, We find out that there is no obvious pattern/trend in the plot, which satisfy the assumption of Independence of Error Terms. There are an obvious funnel-shape trend in the plot. Thus, it meets the assumption of Equal Variance of Error Terms because the points are pretty equally spread out around the y = 0 line.
+- In the plot of residual vs. the predictor, it has no obvious trend/curve that is slightly not linear, and it agrees the assumption of linearity. Lastly, when we checked the Q-Q Plot, the points are very close to the 45-degree line except for a few points. Thus the last assumption of normality of error terms are checked.
+- The regression assumptions are  plausible because 1) Linearity match rigorously; 2)Independence of Error Terms; 3)the residual plots does not show any heteroscedasticity; 4) Normality of Error Terms.
+```{r, echo=FALSE, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
+par(mfcol = c(1,3))
+mod6_plot1 <- plot(model6, 1)
+mod6_plot2 <- plot(model6, 2)
+mod6_plot3 <- plot(model6, 3)
+```
+
+### Question 2
+
+```{r multinomial-model, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+df$remote_ratio <- relevel(df$remote_ratio, ref="In-Person")
+df$job_title <- relevel(df$job_title, ref="Data Engineer")
+remotereg <- multinom(remote_ratio~experience_level+job_title+employee_residence+company_location+company_size, data = df, trace=FALSE)
+stargazer(remotereg,
+          summary=FALSE,
+          header=FALSE,
+          no.space = TRUE,
+          single.row = TRUE,
+          column.sep.width = "0.2pt",
+          digits = 2,
+          font.size = "small",
+          title='Analysis of Deviance: Final Model vs Model w/ One Predictor Variable',
+          type='latex')
+#tidy(remotereg, conf.int = TRUE) %>%
+#  kable(booktabs=T, digits=4, format="latex", linesep="") %>%
+#  kable_styling("basic", full_width = FALSE, position="center",latex_options = c("hold_position"))
+```
+
+Setting our p-value threshold to 0.05 for the result of multinomial logistic regression above, we found that the significant variables are job title, company location, and company size. The model interpretation are:
+
+1. Machine learning engineer (compared to data engineer) is associated with a 1.06 increase in the log odds of hybrid (combination of remote and in-person) working compared to in-person working.
+2. Company located in North America (compared to located in Asia) is associated with a 3.09 increase in the log odds of fully remote working compared to in-person working.
+3. Medium company (compared to large company) is associated with a -2.07 decrease in the log odds of hybrid working compared to in-person working.
+4. Small company (compared to large company) is associated with a -1.04 decrease in the log odds of hybrid working compared to in-person working.
+
+In order to assess our model, our discussion with experts indicated that we don't have to do a deviance test in choosing the best model, so we can go straight to calculating accuracy using Confusion Matrix by using the current model. This confusion matrix yields an accuracy of `66.10%`.
+
+```{r confmat-mult, echo=FALSE, results='asis', message=FALSE, warning=FALSE}
+pred_remote_ratio<- predict(remotereg)
+Conf_mat <- confusionMatrix(as.factor(pred_remote_ratio),as.factor(df$remote_ratio))
+#Conf_mat
+conf_mat_t <- matrix(c(3,0,2,11,42,22,111,53,343), ncol=3, byrow=TRUE)
+colnames(conf_mat_t) <- c("True In-Person", "True Hybrid", "True Full Remote")
+rownames(conf_mat_t) <- c("Predicted In-Person", "Predicted Hybrid", "Predicted Full Remote")
+stargazer(conf_mat_t,
+          summary=FALSE,
+          header=FALSE,
+          no.space = TRUE,
+          single.row = TRUE,
+          column.sep.width = "0.2pt",
+          digits = 2,
+          font.size = "small",
+          title="Confusion Matrix for Multinomial Model",
+          type='latex')
+```
+In addition, to measure our prediction we can use Receiver Operator Characteristic (ROC) curve with the axis as true positive rate (Sensitivity) and true negative rate (1 - Specificity). We use the standard cut-off 0.5, and we can see that for in-person, the area under the curve is 63.9%, for hybrid, the area under the curve is 85%, and for full remote, the area under the curve is 70.8%. Even though the result for predicting in-person is low with 122 mistake in predicting no remote, we have a good prediction for full remote, with only 24 mistake.
+
+```{r, echo=FALSE, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
+## Individual ROC curves for the different levels
+#here we basically treat each level as a standalone level
+par(mfcol = c(1,3))
+predprobs <- fitted(remotereg)
+roc1<-roc((df$remote_ratio=="In-Person"),predprobs[,1],plot=T,print.thres=0.5,legacy.axes=T,print.auc =T,
+    col="#B57288",percent=T,main="In-person")
+roc2<-roc((df$remote_ratio=="Hybrid"),predprobs[,2],plot=T,print.thres=0.5,legacy.axes=T,print.auc =T,
+    col="#34495E",percent=T,main="Hybrid")
+roc3<-roc((df$remote_ratio=="Full Remote"),predprobs[,3],plot=T,print.thres=0.5,legacy.axes=T,print.auc =T,
+    col="#008080",percent=T,main="Full Remote")
+```
+
+## Conclusion
+
+### Key Takeaways
+As mentioned in the introduction, this research aims to explain the factor that affects higher salary and working remote for data science jobs. This research will be useful for human resource professionals, job seeker, or journalist that will keep track and update the data from time to time. Though there are some limitations that will be mentioned below.
+
+### Limitations
+From interpreting and assessing the result of both multiple linear regression and multinomial regression, we found some limitation:
+1. Relatively low number of entries (only 607)
+2. Relatively low number of variables (only 8 valid variables after dropping salary, salary currency, and year)
+3. Relatively high percentage of data coming from North America (65% for company location, 62% for employee residence)
+
+We believe that this study can still be improved by focusing to resolve these limitations.
+
+### Future Potential Study
+In order to increase the accuracy of our model, some of the potential for future study are:
+1. Adding interaction term for job title and experience level
+2. Focusing the study in one continent, such as the United States and adding detail for each states and county.
+3. Trying an ordinal model and assess the model using multinomial model.
