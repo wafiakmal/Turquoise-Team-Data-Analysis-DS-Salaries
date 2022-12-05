@@ -471,6 +471,8 @@ In order to increase the accuracy of our model, some of the potential for future
 1. Adding interaction term for job title and experience level
 2. Focusing the study in one continent, such as the United States and adding detail for each states and county.
 3. Trying an ordinal model and assess the model using multinomial model.
+
+\newpage
 \vspace*{1\baselineskip} 
 
 \centerline{\textbf{References}}
