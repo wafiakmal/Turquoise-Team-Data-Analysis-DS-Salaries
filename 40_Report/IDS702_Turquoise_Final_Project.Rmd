@@ -172,11 +172,10 @@ df_employment_type=as.data.frame(tabyl(df, employment_type,remote_ratio) %>%
 
 
 ```{r echo=FALSE, results='asis', fig.width=6, fig.height=3,figures-side,out.width="50%"}
-kable(df_company_size, caption="Company Size vs Remote Ratio") %>%
+kable(df_company_size, col.names= c('Company Size / Remote Ratio', 'In-Person', 'Hybrid', 'Full Remote', 'Total'), caption="Company Size vs Remote Ratio") %>%
   kable_styling(latex_options = c(font_size=8,"striped", "hold_position"))
-kable(df_employment_type, caption="Employment Type vs Remote Ratio") %>%
+kable(df_employment_type,col.names= c('Employment Type / Remote Ratio', 'In-Person', 'Hybrid', 'Full Remote', 'Total'), caption="Employment Type vs Remote Ratio") %>%
   kable_styling(latex_options = c(font_size=8,"striped", "hold_position"))
-
 
 ```
 
@@ -214,7 +213,7 @@ summary(model1)
 ```
 
 ```{r results='asis', echo=FALSE, include=TRUE}
-stargazer(model1,digits=2, header = F, type = 'latex',no.space = TRUE, font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+stargazer(model1,digits=2, header = F, type = 'latex',no.space = TRUE, font.size = "small",ci=FALSE, table.placement = "H", title = "Multiple Linear Regression First Model Result for Salary (USD)", report = c("vc*"))
 ```
 
 From the result of the baseline model above, we can see that there are something that are statistically significant. For example, if the job title is "Principal Data Engineer", "Financial Data Analyst", "Data Analytics Lead", "Data Analytics Engineer", then these will be the effective predictors of `salary_in_usd` that will likely be the predictors that drastically increase the salary.
@@ -362,7 +361,7 @@ model6
 ```
 
 ```{r results='asis', echo=FALSE}
-stargazer(model6,digits=2, header = F, type = 'latex',no.space = TRUE, column.sep.width = "3pt", font.size = "small",ci=FALSE, table.placement = "H",report = c("vc*"))
+stargazer(model6,digits=2, header = F, type = 'latex',no.space = TRUE, column.sep.width = "3pt", font.size = "small",ci=FALSE, table.placement = "H", title = "Multiple Linear Regression Final Model Result for Salary (USD)",report = c("vc*"))
 ```
 To check the assumptions for Linear Regression, we need to make sure the following:
 
@@ -403,7 +402,7 @@ stargazer(remotereg,
           column.sep.width = "0.2pt",
           digits = 2,
           font.size = "small",
-          title='Analysis of Deviance: Final Model vs Model with One Predictor Variable',
+          title='Multinomial Logistic Regression Model Result for Remote Status',
           type='latex')
 #tidy(remotereg, conf.int = TRUE) %>%
 #  kable(booktabs=T, digits=4, format="latex", linesep="") %>%
@@ -437,7 +436,7 @@ stargazer(conf_mat_t,
           title="Confusion Matrix for Multinomial Model",
           type='latex')
 ```
-In addition, to measure our prediction we can use Receiver Operator Characteristic (ROC) curve with the axis as true positive rate (Sensitivity) and true negative rate (1 - Specificity). We use the standard cut-off 0.5, and we can see that for in-person, the area under the curve is 63.9%, for hybrid, the area under the curve is 85%, and for full remote, the area under the curve is 70.8%. Even though the result for predicting in-person is low with 122 mistake in predicting no remote, we have a good prediction for full remote, with only 24 mistake.
+In addition, to measure our prediction we can use Receiver Operator Characteristic (ROC) curve with the axis as true positive rate (Sensitivity) and true negative rate (1 - Specificity). We use the standard cut-off 0.5, and we can see that for in-person, the area under the curve is 63.9%, for hybrid, the area under the curve is 85%, and for full remote, the area under the curve is 70.8%. Even though the result for predicting in-person is low with 122 mistakes in predicting no remote, we have a good prediction for full remote, with only 24 mistakes.
 
 ```{r, echo=FALSE, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
 ## Individual ROC curves for the different levels
