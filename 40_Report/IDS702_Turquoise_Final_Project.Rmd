@@ -370,12 +370,14 @@ stargazer(model6,digits=2, header = F, type = 'latex',no.space = TRUE, column.se
 - In the plot of residual vs. the predictor, it has no obvious trend/curve that is slightly not linear, and it agrees the assumption of linearity. Lastly, when we checked the Q-Q Plot, the points are very close to the 45-degree line except for a few points. Thus the last assumption of normality of error terms are checked.
 - In the plot of leverage vs. standardized residuals, we can see that everything is inside of the range and nothing is outside of the cook's distance. Thus we can conclude that there are no influential points in this model.
 - The regression assumptions are  plausible because 1) Linearity match rigorously; 2)Independence of Error Terms; 3)the residual plots does not show any heteroscedasticity; 4) Normality of Error Terms 5) No influential points.
-```{r, echo=FALSE, fig.width=8, fig.height=2.5, message=FALSE, warning=FALSE}
-par(mfcol = c(1,4))
+```{r, echo=FALSE, message=FALSE,  warning=FALSE, fig.align='center'}
+par(mfcol = c(2,2))
 mod6_plot1 <- plot(model6, 1)
 mod6_plot2 <- plot(model6, 2)
 mod6_plot3 <- plot(model6, 3)
-mod6_plot_4 <- plot(model6, 4)
+mod6_plot_4 <- plot(model6, 5)
+#plot(model6)
+#fig.width=8, fig.height=2.5,
 ```
 
 ### Question 2
