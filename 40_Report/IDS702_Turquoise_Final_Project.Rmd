@@ -189,6 +189,8 @@ Our dataset has 11 variables, each already described in `introduction`. The firs
 
 Before we fit the model, all categorical variables is transformed from string to factor to ensure there's no typo and it will show up as its own level in the regression result.
 
+With our data, there is inherent multicolinearity. It is clear that salary and experience level will have multicolinearity, as well as company location and employee location. However, our data only has one continuous variable and the rest of the variables are categorical, so we do not need to worry about multicolinearity with each categorical variable and the continuous variable. Between many categorical variables there is also correlation, as is the case with employee location and company location. Because our dataset is as limited as it is, we are chosing to include variables that have mulitcolinearity and correlation, and we keep this in mind as we do our analysis. 
+
 ### Models and Model Assesment
 
 #### Question 1
